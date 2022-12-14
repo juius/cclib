@@ -75,7 +75,32 @@ class ORCA(logfileparser.Logfile):
                     )
                     break
                 self.scfenergies[i] += dispersionenergy
-
+        # Do the same with the 3c corrections.
+        if hasattr(self, "scfenergies") and hasattr(self, "c3corrections"):
+            for i, (scfenergy, c3correction) in enumerate(
+                zip_longest(self.scfenergies, self.c3corrections)
+            ):
+                # It isn't as problematic if there are more 3c corrections than
+                # SCF energies, since all 3c corrections energies can still be
+                # added to the SCF energies, hence the difference in log level.
+                if c3correction is None:
+                    self.logger.error(
+                        "The number of SCF energies and 3c corrections are not equal: %d vs. %d, "
+                        "can't add 3c corrections to all SCF energies",
+                        len(self.scfenergies),
+                        len(self.c3corrections)
+                    )
+                    break
+                if scfenergy is None:
+                    self.logger.warning(
+                        "The number of SCF energies and 3c corrections are not equal: %d vs. %d, "
+                        "can't add 3c corrections to all SCF energies",
+                        len(self.scfenergies),
+                        len(self.c3corrections)
+                    )
+                    break
+                self.scfenergies[i] += c3correction
+        
     def extract(self, inputfile, line):
         """Extract information from the file object inputfile."""
 
@@ -453,6 +478,17 @@ Dispersion correction           -0.016199959
                 line = next(inputfile)
             dispersion = utils.convertor(float(line.split()[-1]), "hartree", "eV")
             self.append_attribute("dispersionenergies", dispersion)
+            
+        """
+------------------   -----------------
+gCP+bas correction        -0.077685516
+------------------   -----------------       
+        """
+        if "gCP+bas correction" in line:
+            if not hasattr(self, "c3corrections"):
+                self.c3corrections = []
+            c3correstion = utils.convertor(float(line.split()[-1]), "hartree", "eV")
+            self.append_attribute("c3corrections", c3correstion)
 
         # The convergence targets for geometry optimizations are printed at the
         # beginning of the output, although the order and their description is
