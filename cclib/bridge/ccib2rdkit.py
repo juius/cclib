@@ -1,9 +1,6 @@
 """Bridge between cclib data and rdkit (https://www.rdkit.org/)."""
 
-"""Bridge between cclib data and rdkit (https://www.rdkit.org/)."""
-
 from packaging import version
-from cclib.io import ccwrite
 from cclib.parser.data import ccData
 from cclib.parser.utils import find_package
 
@@ -46,10 +43,11 @@ def makecclib(mol):
         
     return ccData(attributes)
 
-def makerdkit(data):
+def makerdkit(data, firstgeom=False, lastgeom=True, allgeom=False):
     """Create an rdkit molecule."""
+    from cclib.io import ccwrite
     _check_rdkit(_found_rdkit)
-    xyz_string = ccwrite(data, 'xyz')
+    xyz_string = ccwrite(data, 'xyz', firstgeom=firstgeom, lastgeom=lastgeom, allgeom=allgeom)
     rdkit_mol = Chem.MolFromXYZBlock(xyz_string)
     if _supports_xyz2mol:
         try:
